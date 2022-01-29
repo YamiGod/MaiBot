@@ -1,6 +1,5 @@
 const fs = require('fs');
 const { WAConnection, MessageType, Mimetype, GroupSettingChange } = require('@adiwajshing/baileys');
-const ffmpeg = require('fluent-ffmpeg');
 
 const { text, extendedText, contact, contactsArray, groupInviteMessage, listMessage, buttonsMessage, location, liveLocation, image, video, sticker, document, audio, product } = MessageType
 
