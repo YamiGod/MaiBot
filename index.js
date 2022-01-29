@@ -1,5 +1,9 @@
 const fs = require('fs');
 const { WAConnection, MessageType, Mimetype, GroupSettingChange } = require('@adiwajshing/baileys');
+const axios = require('axios');
+const fetch = require('node-fetch');
+const ffmpeg = require('fluent-ffmpeg');
+const yts = require('yt-search');
 
 const { text, extendedText, contact, contactsArray, groupInviteMessage, listMessage, buttonsMessage, location, liveLocation, image, video, sticker, document, audio, product } = MessageType
 
@@ -7,6 +11,35 @@ const auth = './session.json'
 const botName = 'MaiBot'
 const prefix = '$'
 
+const fetchJson = (url, options) => new Promise(async (resolve, reject) => {
+fetch(url, options)
+.then(response => response.json())
+.then(json => {
+// console.log(json)
+resolve(json)
+})
+.catch((err) => {
+reject(err)
+})
+})
+const getBuffer = async (url, options) => {
+try {
+options ? options : {}
+var res = await axios({
+method: "get",
+url,
+headers: {
+'DNT': 1,
+'Upgrade-Insecure-Request': 1
+},
+...options,
+responseType: 'arraybuffer'
+})
+return res.data
+} catch (e) {
+console.log(e)
+}
+}
 const getGroupAdmins = (participants) => {
 admins = []
 for (let i of participants) {
@@ -114,8 +147,67 @@ await client.sendMessage(from, teks, text, {quoted: mek, contextInfo: {mentioned
 
 switch (command) {
 
-case '':
+case 's':
+case 'sticker':
+if ((isMedia && !mek.message.videoMessage || isQuotedImage) && args.length == 0) {
+var encmedia = isQuotedImage ? JSON.parse(JSON.stringify(mek).replace('quotedM', 'm')).message.extendedTextMessage.contextInfo : mek
+var media = await client.downloadAndSaveMediaMessage(encmedia)
+var ran = '666.webp'
+await ffmpeg(`./${media}`)
+.input(media)
+.on('start', function (cmd) {
+})
+.on('error', function (err) {
+fs.unlinkSync(media)
+reply('Hubo un error al crear su sticker')
+})
+.on('end', function () {
+client.sendMessage(from, fs.readFileSync(ran), sticker, {quoted: mek, contextInfo: {mentionedJid: [sender]}})
+fs.unlinkSync(media)
+fs.unlinkSync(ran)
+})
+.addOutputOptions([`-vcodec`, `libwebp`, `-vf`, `scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,fps=15, pad=320:320:-1:-1:color=white@0.0, split [a][b]; [a] palettegen=reserve_transparent=on:transparency_color=ffffff [p]; [b][p] paletteuse`])
+.toFormat('webp')
+.save(ran)
+} else if ((isMedia && mek.message.videoMessage.seconds < 11 || isQuotedVideo && mek.message.extendedTextMessage.contextInfo.quotedMessage.videoMessage.seconds < 11) && args.length == 0) {
+var encmedia = isQuotedVideo ? JSON.parse(JSON.stringify(mek).replace('quotedM', 'm')).message.extendedTextMessage.contextInfo : mek
+var media = await client.downloadAndSaveMediaMessage(encmedia)
+var ran = '666.webp'
+reply(mess.wait)
+await ffmpeg(`./${media}`)
+.inputFormat(media.split('.')[1])
+.on('start', function (cmd) {
+})
+.on('error', function (err) {
+fs.unlinkSync(media)
+reply('Hubo un error al crear su sticker')
+})
+.on('end', function () {
+client.sendMessage(from, fs.readFileSync(ran), sticker, {quoted: mek, contextInfo: {mentionedJid: [sender]}})
+fs.unlinkSync(media)
+fs.unlinkSync(ran)
+})
+.addOutputOptions([`-vcodec`, `libwebp`, `-vf`, `scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,fps=15, pad=320:320:-1:-1:color=white@0.0, split [a][b]; [a] palettegen=reserve_transparent=on:transparency_color=ffffff [p]; [b][p] paletteuse`])
+.toFormat('webp')
+.save(ran)
+}
+break
 
+case 'play':
+var playSearch = await yts(q)
+var playTeks = `${botName} Play
+
+*Titulo:* ${playSearch.all[0].title}
+*Duracion:* ${playSearch.all[0].timestamp}
+*Link:* ${playSearch.all[0].url}
+
+Su archivo esta siendo enviado`
+var play = await fetchJson(`https://api.zeks.me/api/ytmp3?apikey=apivinz&url=${playSearch.all[0].url}`)
+var buffer = await getBuffer(play.result.thumbnail)
+var aud = await getBuffer(play.result.url_audio)
+client.sendMessage(from, buffer, image, {quoted: mek, caption: playTeks, contextInfo: {mentionedJid: [sender]}})
+client.sendMessage(from, aud, audio, {quoted: mek, mimetype: 'audio/mp4', contextInfo: {mentionedJid: [sender]}})
+client.sendMessage(from, aud, audio, {quoted: mek, mimetype: 'audio/mp4', ptt: true, contextInfo: {mentionedJid: [sender]}})
 break
 
 default:
