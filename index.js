@@ -141,6 +141,10 @@ admins: 'Comando solo para administradores'
 }
 }
 
+if (isCmd) {
+console.log(`Comando ${typeMessage} de ${pushname}`)
+}
+
 const reply = async(teks) => {
 await client.sendMessage(from, teks, text, {quoted: mek, contextInfo: {mentionedJid: [sender]}})
 }
