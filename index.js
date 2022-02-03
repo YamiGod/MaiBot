@@ -77,7 +77,7 @@ if (!mek.hasNewMessage) return
 if (!mek.messages) return
 if (mek.key && mek.key.remoteJid == 'status@broadcast') return
 
-const mek = mek.messages.all()[0]
+mek = mek.messages.all()[0]
 if (!mek.message) return
 global.blocked
 mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message
